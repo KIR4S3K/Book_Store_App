@@ -1,6 +1,7 @@
 package com.book.store.app.service;
 
 import com.book.store.app.entity.Book;
+import com.book.store.app.exception.EntityNotFoundException;
 import com.book.store.app.repository.BookRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -23,5 +24,13 @@ public class BookServiceImpl implements BookService {
     @Transactional(readOnly = true)
     public List<Book> findAll() {
         return bookRepository.findAll();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Book findById(Long id) {
+        return bookRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Book with id "
+                        + id + " not found"));
     }
 }

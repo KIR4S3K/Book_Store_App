@@ -30,7 +30,7 @@ public class BookServiceImpl implements BookService {
     @Override
     @Transactional(readOnly = true)
     public List<BookDto> findAll() {
-        return bookRepository.findAll().stream()
+        return bookRepository.findByDeletedFalse().stream()
                 .map(bookMapper::toDto)
                 .collect(Collectors.toList());
     }
@@ -38,9 +38,32 @@ public class BookServiceImpl implements BookService {
     @Override
     @Transactional(readOnly = true)
     public BookDto findById(Long id) {
-        Book book = bookRepository.findById(id)
+        Book book = bookRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new EntityNotFoundException("Book not found with id "
                         + id));
         return bookMapper.toDto(book);
+    }
+
+    @Override
+    @Transactional
+    public BookDto update(Long id, CreateBookRequestDto dto) {
+        Book book = bookRepository.findByIdAndDeletedFalse(id)
+                .orElseThrow(() -> new EntityNotFoundException("Book not found with id "
+                        + id));
+
+        bookMapper.updateEntityFromDto(dto, book);
+        Book updated = bookRepository.save(book);
+
+        return bookMapper.toDto(updated);
+    }
+
+    @Override
+    @Transactional
+    public void delete(Long id) {
+        Book book = bookRepository.findByIdAndDeletedFalse(id)
+                .orElseThrow(() -> new EntityNotFoundException("Book not found with id "
+                        + id));
+
+        bookRepository.deleteById(book.getId());
     }
 }

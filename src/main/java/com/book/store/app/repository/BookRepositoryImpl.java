@@ -4,6 +4,7 @@ import com.book.store.app.entity.Book;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -21,4 +22,10 @@ public class BookRepositoryImpl implements BookRepository {
     public List<Book> findAll() {
         return em.createQuery("FROM Book", Book.class).getResultList();
     }
+
+    @Override
+    public Optional<Book> findById(Long id) {
+        return Optional.ofNullable(em.find(Book.class, id));
+    }
+
 }

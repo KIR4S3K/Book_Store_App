@@ -2,16 +2,17 @@ package com.book.store.app.controller;
 
 import com.book.store.app.dto.BookDto;
 import com.book.store.app.dto.CreateBookRequestDto;
-import com.book.store.app.entity.Book;
-import com.book.store.app.mapper.BookMapper;
 import com.book.store.app.service.BookService;
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -20,21 +21,20 @@ import org.springframework.web.bind.annotation.RestController;
 public class BookController {
 
     private final BookService bookService;
-    private final BookMapper bookMapper;
 
     @GetMapping
     public List<BookDto> getAll() {
-        return bookMapper.toDtoList(bookService.findAll());
+        return bookService.findAll();
     }
 
     @GetMapping("/{id}")
     public BookDto getBookById(@PathVariable Long id) {
-        return bookMapper.toDto(bookService.findById(id));
+        return bookService.findById(id);
     }
 
     @PostMapping
-    public BookDto createBook(@RequestBody CreateBookRequestDto requestDto) {
-        Book saved = bookService.save(bookMapper.toEntity(requestDto));
-        return bookMapper.toDto(saved);
+    @ResponseStatus(HttpStatus.CREATED)
+    public BookDto createBook(@Valid @RequestBody CreateBookRequestDto requestDto) {
+        return bookService.save(requestDto);
     }
 }

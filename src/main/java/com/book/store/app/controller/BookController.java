@@ -1,6 +1,7 @@
 package com.book.store.app.controller;
 
 import com.book.store.app.dto.BookDto;
+import com.book.store.app.dto.BookSearchParametersDto;
 import com.book.store.app.dto.CreateBookRequestDto;
 import com.book.store.app.service.BookService;
 import jakarta.validation.Valid;
@@ -50,5 +51,10 @@ public class BookController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteBook(@PathVariable Long id) {
         bookService.delete(id);
+    }
+
+    @GetMapping("/search")
+    public List<BookDto> searchBooks(BookSearchParametersDto searchParameters) {
+        return bookService.search(searchParameters);
     }
 }

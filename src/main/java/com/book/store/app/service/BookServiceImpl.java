@@ -1,5 +1,7 @@
 package com.book.store.app.service;
 
+import static com.book.store.app.specification.BookSpecification.withSearchParams;
+
 import com.book.store.app.dto.BookDto;
 import com.book.store.app.dto.BookSearchParametersDto;
 import com.book.store.app.dto.CreateBookRequestDto;
@@ -9,7 +11,6 @@ import com.book.store.app.mapper.BookMapper;
 import com.book.store.app.repository.BookRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -65,26 +66,7 @@ public class BookServiceImpl implements BookService {
     @Override
     @Transactional(readOnly = true)
     public List<BookDto> search(BookSearchParametersDto params) {
-        Specification<Book> spec = Specification.where(null);
-
-        if (params.title() != null && !params.title().isBlank()) {
-            spec = spec.and((root, cq, cb) ->
-                    cb.like(cb.lower(root.get("title")), "%" + params.title().toLowerCase() + "%")
-            );
-        }
-        if (params.author() != null && !params.author().isBlank()) {
-            spec = spec.and((root, cq, cb) ->
-                    cb.like(cb.lower(root.get("author")), "%" + params.author().toLowerCase() + "%")
-            );
-        }
-        if (params.isbn() != null && !params.isbn().isBlank()) {
-            spec = spec.and((root, cq, cb) ->
-                    cb.like(cb.lower(root.get("isbn")), "%" + params.isbn().toLowerCase() + "%")
-            );
-        }
-
-        List<Book> found = bookRepository.findAll(spec);
-        return found.stream()
+        return bookRepository.findAll(withSearchParams(params)).stream()
                 .map(bookMapper::toDto)
                 .toList();
     }

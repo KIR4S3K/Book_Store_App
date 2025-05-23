@@ -38,4 +38,10 @@ public class CustomGlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Unexpected error occurred: " + ex.getMessage()));
     }
+
+    @ExceptionHandler(RegistrationException.class)
+    public ResponseEntity<?> handleRegistrationException(RegistrationException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", ex.getMessage()));
+    }
 }

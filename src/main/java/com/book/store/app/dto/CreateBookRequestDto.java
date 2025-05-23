@@ -27,8 +27,7 @@ public class CreateBookRequestDto {
     private String isbn;
 
     @NotNull(message = "Price is required")
-    @DecimalMin(value = "0.0", inclusive = false, message
-            = "Price must be greater than zero")
+    @DecimalMin(value = "0.0", inclusive = true, message = "Price must be zero or greater")
     private BigDecimal price;
 
     @Size(max = 2000, message = "Description can't be longer than 2000 characters")

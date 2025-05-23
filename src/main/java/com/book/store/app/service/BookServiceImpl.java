@@ -9,8 +9,9 @@ import com.book.store.app.entity.Book;
 import com.book.store.app.exception.EntityNotFoundException;
 import com.book.store.app.mapper.BookMapper;
 import com.book.store.app.repository.BookRepository;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,10 +32,9 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<BookDto> findAll() {
-        return bookRepository.findByDeletedFalse().stream()
-                .map(bookMapper::toDto)
-                .toList();
+    public Page<BookDto> findAll(Pageable pageable) {
+        return bookRepository.findAll(pageable)
+                .map(bookMapper::toDto);
     }
 
     @Override
@@ -65,9 +65,8 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<BookDto> search(BookSearchParametersDto params) {
-        return bookRepository.findAll(withSearchParams(params)).stream()
-                .map(bookMapper::toDto)
-                .toList();
+    public Page<BookDto> search(BookSearchParametersDto params, Pageable pageable) {
+        return bookRepository.findAll(withSearchParams(params), pageable)
+                .map(bookMapper::toDto);
     }
 }

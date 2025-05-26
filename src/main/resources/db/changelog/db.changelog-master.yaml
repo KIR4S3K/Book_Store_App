@@ -49,6 +49,7 @@ databaseChangeLog:
   - changeSet:
       id: 2
       author: Mateusz
+      validCheckSum: ANY
       changes:
         - createTable:
             tableName: users
@@ -84,3 +85,134 @@ databaseChangeLog:
               - column:
                   name: shipping_address
                   type: VARCHAR(1024)
+
+  - changeSet:
+      id: 3
+      author: Mateusz
+      validCheckSum: ANY
+      changes:
+        - createTable:
+            tableName: roles
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+                    unique: true
+
+  - changeSet:
+      id: 4
+      author: Mateusz
+      validCheckSum: ANY
+      changes:
+        - createTable:
+            tableName: users_roles
+            columns:
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: users_roles
+            columnNames: user_id, role_id
+            constraintName: pk_users_roles
+        - addForeignKeyConstraint:
+            baseTableName: users_roles
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_users_roles_user
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: users_roles
+            baseColumnNames: role_id
+            referencedTableName: roles
+            referencedColumnNames: id
+            constraintName: fk_users_roles_role
+            onDelete: CASCADE
+
+  - changeSet:
+      id: 5
+      author: Mateusz
+      validCheckSum: ANY
+      changes:
+        - insert:
+            tableName: roles
+            columns:
+              - column:
+                  name: name
+                  value: ROLE_USER
+        - insert:
+            tableName: roles
+            columns:
+              - column:
+                  name: name
+                  value: ROLE_ADMIN
+
+  - changeSet:
+      id: 5.1
+      author: Mateusz
+      validCheckSum: ANY
+      changes:
+        - insert:
+            tableName: users
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 1
+              - column:
+                  name: email
+                  value: admin@example.com
+              - column:
+                  name: password
+                  value: admin123
+              - column:
+                  name: first_name
+                  value: Admin
+              - column:
+                  name: last_name
+                  value: User
+              - column:
+                  name: shipping_address
+                  value: "123 Admin Street"
+
+  - changeSet:
+      id: 6
+      author: Mateusz
+      validCheckSum: ANY
+      preConditions:
+        onFail: MARK_RAN
+        onError: MARK_RAN
+        preConditions:
+          - tableExists:
+              tableName: users_roles
+          - sqlCheck:
+              expectedResult: "1"
+              sql: SELECT COUNT(*) FROM users WHERE id = 1
+          - sqlCheck:
+              expectedResult: "1"
+              sql: SELECT COUNT(*) FROM roles WHERE name = 'ROLE_ADMIN'
+      changes:
+        - insert:
+            tableName: users_roles
+            columns:
+              - column:
+                  name: user_id
+                  valueNumeric: 1
+              - column:
+                  name: role_id
+                  valueComputed: "(SELECT id FROM roles WHERE name='ROLE_ADMIN')"

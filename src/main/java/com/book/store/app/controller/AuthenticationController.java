@@ -35,9 +35,9 @@ public class AuthenticationController {
 
     @PostMapping("/login")
     @PreAuthorize("permitAll()")
-    public UserLoginResponseDto login(
+    public UserLoginResponseDto authenticate(
             @Valid @RequestBody UserLoginRequestDto request
     ) {
-        return authenticationService.login(request);
+        return authenticationService.authenticate(request);
     }
 }

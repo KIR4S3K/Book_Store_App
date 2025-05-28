@@ -17,11 +17,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final JwtUtil jwtUtil;
 
     @Override
-    public UserLoginResponseDto login(UserLoginRequestDto request) {
+    public UserLoginResponseDto authenticate(UserLoginRequestDto request) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.email(), request.password())
         );
-        String token = jwtUtil.generateToken(request.email());
+        String token = jwtUtil.generateToken(authentication.getName());
         return new UserLoginResponseDto(token);
     }
 }

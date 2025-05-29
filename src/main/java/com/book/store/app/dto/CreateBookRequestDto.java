@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -35,4 +36,6 @@ public class CreateBookRequestDto {
 
     @Size(max = 255, message = "Cover image URL can't be longer than 255 characters")
     private String coverImage;
+
+    private Set<Long> categoryIds;
 }

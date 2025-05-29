@@ -1,7 +1,10 @@
 package com.book.store.app.controller;
 
+import com.book.store.app.dto.UserLoginRequestDto;
+import com.book.store.app.dto.UserLoginResponseDto;
 import com.book.store.app.dto.UserRegistrationRequestDto;
 import com.book.store.app.dto.UserResponseDto;
+import com.book.store.app.service.AuthenticationService;
 import com.book.store.app.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,11 +22,22 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthenticationController {
 
     private final UserService userService;
+    private final AuthenticationService authenticationService;
 
     @PostMapping("/registration")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("permitAll()")
-    public UserResponseDto register(@Valid @RequestBody UserRegistrationRequestDto request) {
+    public UserResponseDto register(
+            @Valid @RequestBody UserRegistrationRequestDto request
+    ) {
         return userService.register(request);
+    }
+
+    @PostMapping("/login")
+    @PreAuthorize("permitAll()")
+    public UserLoginResponseDto authenticate(
+            @Valid @RequestBody UserLoginRequestDto request
+    ) {
+        return authenticationService.authenticate(request);
     }
 }

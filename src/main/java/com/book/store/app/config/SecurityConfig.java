@@ -41,50 +41,35 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-
                         .requestMatchers(HttpMethod.POST, "/api/auth/registration",
                                 "/api/auth/login")
                         .permitAll()
-                        .requestMatchers(
-                                "/swagger-ui/**",
-                                "/swagger-ui.html",
-                                "/v3/api-docs/**",
-                                "/webjars/**"
-                        ).permitAll()
-
-                        .requestMatchers(HttpMethod.GET, "/api/books/**")
-                        .hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/cart")
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/books/**", "/api/categories/**",
+                                "/api/cart/**", "/api/orders/**")
                         .hasRole("USER")
-                        .requestMatchers(HttpMethod.GET, "/api/cart")
+                        .requestMatchers(HttpMethod.POST, "/api/cart",
+                                "/api/orders")
                         .hasRole("USER")
                         .requestMatchers(HttpMethod.PUT, "/api/cart/cart-items/**")
                         .hasRole("USER")
                         .requestMatchers(HttpMethod.DELETE, "/api/cart/cart-items/**")
                         .hasRole("USER")
-                        .requestMatchers(HttpMethod.GET, "/api/categories/**")
-                        .hasAnyRole("USER", "ADMIN")
-
-                        .requestMatchers(HttpMethod.POST, "/api/books/**")
+                        .requestMatchers(HttpMethod.PATCH, "/api/orders/**")
                         .hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/books/**")
+                        .requestMatchers(HttpMethod.POST, "/api/books/**",
+                                "/api/categories/**")
                         .hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/books/**")
+                        .requestMatchers(HttpMethod.PUT, "/api/books/**",
+                                "/api/categories/**")
                         .hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/categories/**")
+                        .requestMatchers(HttpMethod.DELETE, "/api/books/**",
+                                "/api/categories/**")
                         .hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/categories/**")
-                        .hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/categories/**")
-                        .hasRole("ADMIN")
-
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(
-                        jwtAuthenticationFilter,
-                        UsernamePasswordAuthenticationFilter.class
-                )
-                .formLogin(form -> form.disable())
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter
+                        .class)
                 .httpBasic(Customizer.withDefaults());
 
         return http.build();

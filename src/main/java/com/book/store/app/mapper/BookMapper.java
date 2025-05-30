@@ -16,13 +16,11 @@ import org.mapstruct.MappingTarget;
 @Mapper(componentModel = "spring")
 public interface BookMapper {
 
-    // Mapowanie encji Book na DTO, pomijamy automatyczne wypełnienie categoryIds
     @Mapping(target = "categoryIds", ignore = true)
     BookDto toDto(Book book);
 
     List<BookDto> toDtoList(List<Book> books);
 
-    // Mapowanie DTO na encję Book, pomijamy kategorie (obsłużymy w serwisie)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "deleted", ignore = true)
     @Mapping(target = "categories", ignore = true)
@@ -33,10 +31,8 @@ public interface BookMapper {
     @Mapping(target = "categories", ignore = true)
     void updateEntityFromDto(CreateBookRequestDto dto, @MappingTarget Book book);
 
-    // Mapowanie dla endpointu GET /categories/{id}/books
     BookDtoWithoutCategoryIds toDtoWithoutCategories(Book book);
 
-    // Po mapowaniu pełnego BookDto dodajemy ręcznie set ID kategorii
     @AfterMapping
     default void setCategoryIds(@MappingTarget BookDto bookDto, Book book) {
         if (book.getCategories() != null) {

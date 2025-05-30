@@ -217,7 +217,6 @@ databaseChangeLog:
                   name: role_id
                   valueComputed: "(SELECT id FROM roles WHERE name='ROLE_ADMIN')"
 
-  # --- DODANE CHANGESETY DLA KATEGORII ---
   - changeSet:
       id: 7
       author: Mateusz
@@ -278,3 +277,6 @@ databaseChangeLog:
             referencedColumnNames: id
             constraintName: fk_books_categories_category
             onDelete: CASCADE
+
+  - include:
+      file: db/changelog/changesets/db.changelog-cart.xml

@@ -4,6 +4,7 @@ import com.book.store.app.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -40,13 +41,43 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+
+                        .requestMatchers(HttpMethod.POST, "/api/auth/registration",
+                                "/api/auth/login")
+                        .permitAll()
                         .requestMatchers(
-                                "/api/auth/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
                                 "/webjars/**"
                         ).permitAll()
+
+                        .requestMatchers(HttpMethod.GET, "/api/books/**")
+                        .hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/cart")
+                        .hasRole("USER")
+                        .requestMatchers(HttpMethod.GET, "/api/cart")
+                        .hasRole("USER")
+                        .requestMatchers(HttpMethod.PUT, "/api/cart/cart-items/**")
+                        .hasRole("USER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/cart/cart-items/**")
+                        .hasRole("USER")
+                        .requestMatchers(HttpMethod.GET, "/api/categories/**")
+                        .hasAnyRole("USER", "ADMIN")
+
+                        .requestMatchers(HttpMethod.POST, "/api/books/**")
+                        .hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/books/**")
+                        .hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/books/**")
+                        .hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/categories/**")
+                        .hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/categories/**")
+                        .hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/categories/**")
+                        .hasRole("ADMIN")
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(

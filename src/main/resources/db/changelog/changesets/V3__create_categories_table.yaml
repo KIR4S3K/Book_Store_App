@@ -1,7 +1,7 @@
 databaseChangeLog:
   - changeSet:
       id: create-categories
-      author: twoje_imie
+      author: Mateusz
       changes:
         - createTable:
             tableName: categories

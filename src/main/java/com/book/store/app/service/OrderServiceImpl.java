@@ -5,7 +5,6 @@ import com.book.store.app.dto.OrderRequestDto;
 import com.book.store.app.dto.OrderResponseDto;
 import com.book.store.app.entity.Order;
 import com.book.store.app.entity.OrderItem;
-import com.book.store.app.entity.OrderStatus;
 import com.book.store.app.entity.ShoppingCart;
 import com.book.store.app.entity.User;
 import com.book.store.app.exception.EntityNotFoundException;
@@ -49,11 +48,13 @@ public class OrderServiceImpl implements OrderService {
         User user = getCurrentUser();
         final ShoppingCart cart = cartRepo.findByUser(user)
                 .orElseThrow(() -> new EntityNotFoundException("Cart not found for user"));
+
         Order order = new Order();
         order.setUser(user);
-        order.setStatus(OrderStatus.PENDING);
+        order.setStatus(Order.Status.PENDING);
         order.setOrderDate(LocalDateTime.now(clock));
         order.setShippingAddress(request.getShippingAddress());
+
         cart.getCartItems().forEach(ci -> {
             OrderItem oi = new OrderItem();
             oi.setOrder(order);
@@ -62,12 +63,15 @@ public class OrderServiceImpl implements OrderService {
             oi.setPrice(ci.getBook().getPrice());
             order.getOrderItems().add(oi);
         });
+
         BigDecimal total = order.getOrderItems().stream()
                 .map(i -> i.getPrice().multiply(BigDecimal.valueOf(i.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         order.setTotal(total);
+
         cart.getCartItems().clear();
         cartRepo.save(cart);
+
         Order saved = orderRepo.save(order);
         return mapper.toDto(saved);
     }
@@ -110,7 +114,7 @@ public class OrderServiceImpl implements OrderService {
     public OrderResponseDto updateOrderStatus(Long orderId, String status) {
         Order order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new EntityNotFoundException("Order not found: " + orderId));
-        order.setStatus(OrderStatus.valueOf(status));
+        order.setStatus(Order.Status.valueOf(status));
         Order updated = orderRepo.save(order);
         return mapper.toDto(updated);
     }

@@ -28,6 +28,13 @@ import lombok.Setter;
 @NoArgsConstructor
 public class Order {
 
+    public enum Status {
+        PENDING,
+        COMPLETED,
+        DELIVERED,
+        CANCELLED
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -38,7 +45,7 @@ public class Order {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private OrderStatus status;
+    private Status status;
 
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal total;
@@ -51,5 +58,4 @@ public class Order {
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<OrderItem> orderItems = new HashSet<>();
-
 }

@@ -68,7 +68,6 @@ class BookServiceImplTest {
     @DisplayName("Should save a new book")
     void save_newBook() {
         Book toSave = new Book();
-        // mapper creates an entity from DTO
         when(bookMapper.toEntity(createDto)).thenReturn(toSave);
         when(bookRepository.save(toSave)).thenReturn(exampleBook);
         when(bookMapper.toDto(exampleBook)).thenReturn(new BookDto(
@@ -147,7 +146,6 @@ class BookServiceImplTest {
     @DisplayName("update correctly updates and returns BookDto")
     void update_existing() {
         when(bookRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(exampleBook));
-        // simulate mapper updating entity
         doAnswer(invocation -> {
             CreateBookRequestDto dto = invocation.getArgument(0);
             Book b = invocation.getArgument(1);

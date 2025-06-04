@@ -2,14 +2,12 @@ package com.book.store.app.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
 
 import com.book.store.app.dto.AddToCartRequestDto;
 import com.book.store.app.dto.CartItemDto;
@@ -19,21 +17,20 @@ import com.book.store.app.entity.Book;
 import com.book.store.app.entity.CartItem;
 import com.book.store.app.entity.ShoppingCart;
 import com.book.store.app.entity.User;
+import com.book.store.app.exception.EntityNotFoundException;
 import com.book.store.app.mapper.CartMapper;
 import com.book.store.app.repository.BookRepository;
 import com.book.store.app.repository.CartItemRepository;
 import com.book.store.app.repository.ShoppingCartRepository;
 import com.book.store.app.repository.UserRepository;
-import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -42,25 +39,29 @@ class ShoppingCartServiceImplTest {
 
     @Mock
     private ShoppingCartRepository cartRepo;
+
     @Mock
     private CartItemRepository itemRepo;
+
     @Mock
     private UserRepository userRepo;
+
     @Mock
     private BookRepository bookRepo;
-    @Mock
-    private CartMapper mapper;
 
-    @InjectMocks
     private ShoppingCartServiceImpl service;
+    private CartMapper cartMapper;
 
     private final String email = "user@example.com";
     private User user;
     private ShoppingCart cart;
-    private ShoppingCartDto dto;
 
     @BeforeEach
     void setUp() {
+        // Use a real CartMapper instance
+        cartMapper = new CartMapper();
+        service = new ShoppingCartServiceImpl(cartRepo, itemRepo, userRepo, bookRepo, cartMapper);
+
         user = new User();
         user.setId(1L);
         user.setEmail(email);
@@ -68,17 +69,15 @@ class ShoppingCartServiceImplTest {
         cart = new ShoppingCart();
         cart.setId(1L);
         cart.setUser(user);
-
-        dto = new ShoppingCartDto(1L, 1L, List.of());
     }
 
     private void mockSecurityContextWithEmail(String email) {
-        Authentication auth = mock(Authentication.class, withSettings().lenient());
-        when(auth.getName()).thenReturn(email);
+        // Use UsernamePasswordAuthenticationToken instead of mocking Authentication interface
+        UsernamePasswordAuthenticationToken auth =
+                new UsernamePasswordAuthenticationToken(email, null);
 
-        SecurityContext context = mock(SecurityContext.class, withSettings().lenient());
-        when(context.getAuthentication()).thenReturn(auth);
-
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(auth);
         SecurityContextHolder.setContext(context);
     }
 
@@ -89,14 +88,16 @@ class ShoppingCartServiceImplTest {
 
         when(userRepo.findByEmail(email)).thenReturn(Optional.of(user));
         when(cartRepo.findByUser(user)).thenReturn(Optional.of(cart));
-        when(mapper.toDto(cart)).thenReturn(dto);
 
         ShoppingCartDto result = service.getCartForCurrentUser();
 
-        assertThat(result).isEqualTo(dto);
+        assertThat(result).isNotNull();
+        assertThat(result.getId()).isEqualTo(cart.getId());
+        assertThat(result.getUserId()).isEqualTo(user.getId());
+        assertThat(result.getCartItems()).isEmpty();
+
         verify(userRepo).findByEmail(email);
         verify(cartRepo).findByUser(user);
-        verify(mapper).toDto(cart);
     }
 
     @Test
@@ -105,12 +106,14 @@ class ShoppingCartServiceImplTest {
         mockSecurityContextWithEmail(email);
         when(userRepo.findByEmail(email)).thenReturn(Optional.empty());
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> service.getCartForCurrentUser());
+        EntityNotFoundException exception = assertThrows(
+                EntityNotFoundException.class,
+                () -> service.getCartForCurrentUser()
+        );
 
-        assertThat(exception).hasMessageContaining("User not found");
+        assertThat(exception.getMessage()).contains("User not found");
         verify(userRepo).findByEmail(email);
-        verifyNoInteractions(cartRepo, mapper);
+        verifyNoInteractions(cartRepo);
     }
 
     @Test
@@ -118,8 +121,8 @@ class ShoppingCartServiceImplTest {
     void addToCart_shouldAddItem() {
         mockSecurityContextWithEmail(email);
 
-        Long bookId = 1L;
-        int quantity = 2;
+        final Long bookId = 1L;
+        final int quantity = 2;
 
         AddToCartRequestDto request = new AddToCartRequestDto();
         request.setBookId(bookId);
@@ -127,28 +130,30 @@ class ShoppingCartServiceImplTest {
 
         Book book = new Book();
         book.setId(bookId);
+        book.setTitle("Sample Title");
 
         when(userRepo.findByEmail(email)).thenReturn(Optional.of(user));
         when(cartRepo.findByUser(user)).thenReturn(Optional.of(cart));
         when(bookRepo.findById(bookId)).thenReturn(Optional.of(book));
         when(itemRepo.save(any(CartItem.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        CartItemDto cartItemDto = new CartItemDto(1L, bookId,
-                "Sample Book Title", quantity);
-        when(mapper.toDto(any(CartItem.class))).thenReturn(cartItemDto);
+                .thenAnswer(invocation -> {
+                    CartItem ci = invocation.getArgument(0);
+                    ci.setId(100L); // simulate ID assignment
+                    return ci;
+                });
 
         CartItemDto result = service.addToCart(request);
 
         assertThat(result).isNotNull();
+        assertThat(result.getId()).isEqualTo(100L);
         assertThat(result.getBookId()).isEqualTo(bookId);
+        assertThat(result.getBookTitle()).isEqualTo("Sample Title");
         assertThat(result.getQuantity()).isEqualTo(quantity);
 
         verify(userRepo).findByEmail(email);
         verify(cartRepo).findByUser(user);
         verify(bookRepo).findById(bookId);
         verify(itemRepo).save(any(CartItem.class));
-        verify(mapper).toDto(any(CartItem.class));
     }
 
     @Test
@@ -156,32 +161,56 @@ class ShoppingCartServiceImplTest {
     void updateCartItem_shouldUpdateQuantity() {
         mockSecurityContextWithEmail(email);
 
-        Long cartItemId = 1L;
-        int newQuantity = 5;
+        final Long cartItemId = 1L;
+        final int newQuantity = 5;
 
         UpdateCartItemRequestDto request = new UpdateCartItemRequestDto();
         request.setQuantity(newQuantity);
 
+        Book book = new Book();
+        book.setId(2L);
+        book.setTitle("Updated Title");
+
         CartItem item = new CartItem();
         item.setId(cartItemId);
+        item.setBook(book);
         item.setQuantity(1);
 
         when(itemRepo.findById(cartItemId)).thenReturn(Optional.of(item));
         when(itemRepo.save(any(CartItem.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        CartItemDto cartItemDto = new CartItemDto(1L, 1L,
-                "Sample Book Title", newQuantity);
-        when(mapper.toDto(any(CartItem.class))).thenReturn(cartItemDto);
-
         CartItemDto result = service.updateCartItem(cartItemId, request);
 
         assertThat(result).isNotNull();
         assertThat(item.getQuantity()).isEqualTo(newQuantity);
+        assertThat(result.getQuantity()).isEqualTo(newQuantity);
+        assertThat(result.getBookId()).isEqualTo(book.getId());
+        assertThat(result.getBookTitle()).isEqualTo(book.getTitle());
 
         verify(itemRepo).findById(cartItemId);
         verify(itemRepo).save(item);
-        verify(mapper).toDto(item);
+    }
+
+    @Test
+    @DisplayName("updateCartItem throws when item not found")
+    void updateCartItem_whenItemNotFound_shouldThrowException() {
+        mockSecurityContextWithEmail(email);
+
+        final Long cartItemId = 1L;
+        UpdateCartItemRequestDto request = new UpdateCartItemRequestDto();
+        request.setQuantity(3);
+
+        when(itemRepo.findById(cartItemId)).thenReturn(Optional.empty());
+
+        EntityNotFoundException exception = assertThrows(
+                EntityNotFoundException.class,
+                () -> service.updateCartItem(cartItemId, request)
+        );
+
+        assertThat(exception.getMessage()).contains("CartItem not found");
+        verify(itemRepo).findById(cartItemId);
+        verify(itemRepo, never()).save(any(CartItem.class));
     }
 
     @Test
@@ -189,7 +218,7 @@ class ShoppingCartServiceImplTest {
     void removeCartItem_shouldRemoveItem() {
         mockSecurityContextWithEmail(email);
 
-        Long itemId = 1L;
+        final Long itemId = 1L;
         CartItem item = new CartItem();
         item.setId(itemId);
 
@@ -207,15 +236,16 @@ class ShoppingCartServiceImplTest {
     void removeCartItem_whenItemNotFound_shouldThrowException() {
         mockSecurityContextWithEmail(email);
 
-        Long itemId = 1L;
+        final Long itemId = 1L;
         when(itemRepo.findById(itemId)).thenReturn(Optional.empty());
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> service.removeCartItem(itemId));
+        EntityNotFoundException exception = assertThrows(
+                EntityNotFoundException.class,
+                () -> service.removeCartItem(itemId)
+        );
 
-        assertThat(exception).hasMessageContaining("CartItem not found");
-
+        assertThat(exception.getMessage()).contains("CartItem not found");
         verify(itemRepo).findById(itemId);
-        verify(itemRepo, never()).delete(any());
+        verify(itemRepo, never()).delete(any(CartItem.class));
     }
 }
